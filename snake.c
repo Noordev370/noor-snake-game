@@ -1,30 +1,29 @@
 #include "raylib.h"
-#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 550
 //
-#define SNAKE_SPEED 1000.0
+#define SNAKE_SPEED 1200.0
 #define SNAKE_SEGMENT_WIDTH 15
 #define SNAKE_SEGMENT_HEIGHT 15
 #define SNAKE_MAX_LENGTH 500
 #define SNAKE_FOOD_WIDTH 15
 #define SNAKE_FOOD_HEIGHT 15
 
-int score = 0;
-int game_over = 0;
-float snake_move_interval = 0.1; // in seconds
-typedef enum Direction { Up, Down, Right, Left } Direction;
+uint32_t score = 0;
+uint8_t game_over = 0;
+float snake_move_interval = 0.09; // in seconds
+typedef enum { Up, Down, Right, Left } Direction;
 typedef Rectangle SnakeSegment;
-typedef struct Snake {
+typedef struct {
   Vector2 velocity;
   Color color;
   Direction direction;
   float last_move_time;
-  int length;
+  uint16_t length;
   SnakeSegment segments[];
 } Snake;
 
@@ -111,7 +110,7 @@ void handle_keyboard_events(Snake *snake, Food *food) {
   }
 }
 
-void check_collision(Snake *snake, Food *food,Sound *sound_to_play) {
+void check_collision(Snake *snake, Food *food, Sound *sound_to_play) {
   SnakeSegment *snake_head = &(snake->segments[0]);
   // snake with walls
   if (snake_head->x < 0 ||
@@ -130,13 +129,18 @@ void check_collision(Snake *snake, Food *food,Sound *sound_to_play) {
   }
 
   // snake with itself
+  for (int i = 1; i < snake->length; i++) {
+    if (CheckCollisionRecs(*snake_head, snake->segments[i])) {
+      game_over = 1;
+    }
+  }
 }
 
 int main(void) {
   float delta_time;
   Snake *snake = alloc_init_snake();
-  Food food = {(float)GetRandomValue(70, SCREEN_WIDTH),
-               (float)GetRandomValue(70, SCREEN_HEIGHT), SNAKE_FOOD_WIDTH,
+  Food food = {GetRandomValue(70.0, SCREEN_WIDTH),
+               GetRandomValue(70.0, SCREEN_HEIGHT), SNAKE_FOOD_WIDTH,
                SNAKE_FOOD_HEIGHT};
 
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "noor snake game");
@@ -145,7 +149,7 @@ int main(void) {
   Music bg = LoadMusicStream("./bg.mp3");
 
   SetTargetFPS(60);
-  SetSoundVolume(eee,0.4); // too loud sound
+  SetSoundVolume(eee, 0.4); // too loud sound
   PlayMusicStream(bg);
 
   // Main game loop
@@ -161,7 +165,7 @@ int main(void) {
 
       handle_keyboard_events(snake, &food);
       update_snake_pos(snake, delta_time);
-      check_collision(snake, &food,&eee);
+      check_collision(snake, &food, &eee);
       // drawing
       BeginDrawing();
       ClearBackground(BLACK);

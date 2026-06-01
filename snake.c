@@ -7,7 +7,7 @@
 #define SCREEN_HEIGHT 550
 #define FRAME_LIMIT 60
 //
-#define SNAKE_SPEED 15.0  // don't update this to change speed. update the move_interval instead
+#define SNAKE_SPEED 15.0 // don't update this to change speed. update the move_interval instead
 #define SNAKE_SEGMENT_WIDTH 15
 #define SNAKE_SEGMENT_HEIGHT 15
 #define SNAKE_MAX_LENGTH 500
@@ -95,6 +95,25 @@ void renew_food(Food *food) {
   food->rect.y = GetRandomValue(50, SCREEN_HEIGHT - 50);
 }
 
+void handle_gamepad_events(Snake *snake, Food *food) {
+  if (IsGamepadButtonPressed(0, GAMEPAD_BUTTON_LEFT_FACE_UP) && snake->direction != Down) {
+    snake->direction = Up;
+    snake->velocity = (Vector2){0.0, -SNAKE_SPEED};
+  }
+  if (IsGamepadButtonPressed(0, GAMEPAD_BUTTON_LEFT_FACE_DOWN) && snake->direction != Up) {
+    snake->direction = Down;
+    snake->velocity = (Vector2){0.0, SNAKE_SPEED};
+  }
+  if (IsGamepadButtonPressed(0, GAMEPAD_BUTTON_LEFT_FACE_RIGHT) && snake->direction != Left) {
+    snake->direction = Right;
+    snake->velocity = (Vector2){SNAKE_SPEED, 0.0};
+  }
+  if (IsGamepadButtonPressed(0, GAMEPAD_BUTTON_LEFT_FACE_LEFT) && (snake->direction != Right)) {
+    snake->direction = Left;
+    snake->velocity = (Vector2){-SNAKE_SPEED, 0.0};
+  }
+}
+
 void handle_keyboard_events(Snake *snake, Food *food) {
   if (IsKeyPressed(KEY_UP) && snake->direction != Down) {
     snake->direction = Up;
@@ -146,7 +165,7 @@ int main(void) {
   Rectangle food_rect = {GetRandomValue(70.0, SCREEN_WIDTH),
                          GetRandomValue(70.0, SCREEN_HEIGHT), SNAKE_FOOD_WIDTH,
                          SNAKE_FOOD_HEIGHT};
-
+  SetConfigFlags(FLAG_FULLSCREEN_MODE);
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "noor snake game");
   Texture2D food_tex = LoadTexture("./pie32.png");
   Food food = {food_rect, food_tex};
@@ -157,6 +176,11 @@ int main(void) {
   SetTargetFPS(FRAME_LIMIT);
   SetSoundVolume(eee, 0.3); // too loud sound
   PlayMusicStream(bg);
+  if (IsGamepadAvailable(0) || IsGamepadAvailable(1)) {
+    printf("\e[0;33m------------ GamePad detected \e[0m\n");
+  } else {
+    printf("\e[0;31m-------------  No GamePad detected \e[0m\n");
+  }
 
   // Main game loop
   while (!WindowShouldClose()) {
@@ -168,7 +192,7 @@ int main(void) {
       DrawText("player lost", 320, 230, 25, RED);
       EndDrawing();
     } else {
-
+      handle_gamepad_events(snake, &food);
       handle_keyboard_events(snake, &food);
       update_snake_pos(snake);
       // drawing
@@ -179,6 +203,7 @@ int main(void) {
       draw_food(&food);
       EndDrawing();
       check_collision(snake, &food, &eee);
+
     }
   }
   UnloadSound(eee);
